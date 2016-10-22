@@ -6,10 +6,12 @@ from BeautifulSoup import BeautifulSoup
 import threading
 import multiprocessing
 from urlparse import urljoin
+from constants import HEADER
+from utils import parse_links
 
 path = sys.argv[2]
 
-ydl_opts = {'outtmpl': path+strftime("%b %d", gmtime())+'/%(title)s.mp4',
+ydl_opts = {'outtmpl': path+'/%(title)s.mp4',
         'cachedir':False}
 
 '''import androidhelper
@@ -18,14 +20,17 @@ mode = droid.dialogGetInput().result'''
 
 mode=sys.argv[1]
 
-def download_video(url,ydl_opts=None):
+def download_video(url):
     print url
-    global ydl
+    global ydl_opts
+    print ydl_opts
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
     except Exception as e:
-        print e
+        print "Finding video links failed, trying to parse manually"
+        for index,link in enumerate(parse_links(url)):
+            if index>4:download_video(url+link)
 
 def download_cricingif(ballid):
     start = ballid-6
@@ -41,7 +46,7 @@ def download_cricket(url):
     '''mycrickethighlights.com'''
     url = 'http://mycrickethighlights.com/latest-cricket-highlights/'
 
-    req = urllib2.Request(url, headers={'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04"})
+    req = urllib2.Request(url, headers=HEADER)
     con = urllib2.urlopen(req)
     data=con.read()
     soup = BeautifulSoup(data)
@@ -51,7 +56,7 @@ def download_cricket(url):
     for highlight in highlights:
         url =  urljoin('http://mycrickethighlights.com',highlight.get('href'))
 
-        req = urllib2.Request(url, headers={'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04"})
+        req = urllib2.Request(url, headers=HEADER)
         con = urllib2.urlopen(req)
         data=con.read()
         soup = BeautifulSoup(data)
@@ -93,7 +98,7 @@ def download_hootfoot(file=None):
     print url
 
     if file is None:
-        req = urllib2.Request(url, headers={'User-Agent' : "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Ubuntu/11.04 Chromium/12.0.742.112 Chrome/12.0.742.112 Safari/534.30"}) 
+        req = urllib2.Request(url, headers=HEADER) 
         con = urllib2.urlopen(req)
         data=con.read()
     else:
